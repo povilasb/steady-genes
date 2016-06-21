@@ -98,13 +98,3 @@ def describe_stabilizes_gene():
                 ),
                 is_(False)
             )
-
-def describe_genes_replacement():
-    def describe_when_substring_includes_excessive_characters_to_replace():
-        def it_returns_the_substring():
-            text = 'CCCAGTTT'
-            replace_me = steady_genes.excessive_genes(text)
-
-            replacement = steady_genes.genes_replacement(text, replace_me, 5)
-
-            assert_that(replacement, is_('CCAGT'))

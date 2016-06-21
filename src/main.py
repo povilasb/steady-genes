@@ -18,30 +18,6 @@ def starting_search_window_size(excessive_genes):
     return sum(excessive_genes.values())
 
 
-class SubstringIterator:
-    """Iterates fixed sized substrings within some text."""
-
-    def __init__(self, text, start_position, substring_size):
-        self.text = text
-        self.position = start_position
-        self.substring_size = substring_size
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if not self.has_next():
-            raise StopIteration()
-
-        position = self.position
-        self.position += 1
-
-        return self.text[position:position + self.substring_size]
-
-    def has_next(self):
-        return self.position <= len(self.text) - self.substring_size
-
-
 def stabilizes_gene(char_frequencies, replace_me):
     if len(char_frequencies) < len(replace_me):
         return False
@@ -53,24 +29,41 @@ def stabilizes_gene(char_frequencies, replace_me):
     return True
 
 
-def genes_replacement(text, replace_me, window_size):
-    for substr in SubstringIterator(text, 0, window_size):
-        if stabilizes_gene(Counter(substr), replace_me):
-            return substr
+def expand_substring(substr, text, position, replace_me):
+    while position + 1< len(text) and not stabilizes_gene(Counter(substr), replace_me):
+        position += 1
+        substr += text[position]
 
-    return text
+    return (substr, position)
+
+
+def reduce_substring(substr, replace_me):
+    last_removed_letter = ''
+
+    while len(substr) > 0 and stabilizes_gene(Counter(substr), replace_me):
+        last_removed_letter = substr[0]
+        substr = substr[1:]
+
+    return substr, last_removed_letter
 
 
 def min_substring(text):
+    min_substring = text
     replace_me = excessive_genes(text)
-    init_window_size = starting_search_window_size(replace_me)
 
-    for window_size in range(init_window_size, len(text)):
-        replacement = genes_replacement(text, replace_me, window_size)
-        if len(replacement) < len(text):
-            return replacement
+    if len(replace_me) == 0:
+        return ''
 
-    return text
+    pos = 0
+    substr = text[0]
+    while pos + 1 < len(text):
+        substr, pos = expand_substring(substr, text, pos, replace_me)
+        substr, last_removed = reduce_substring(substr, replace_me)
+
+        if len(substr) + 1 < len(min_substring):
+            min_substring = last_removed + substr
+
+    return min_substring
 
 
 def main():
