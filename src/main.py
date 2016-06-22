@@ -6,71 +6,79 @@ def desired_letter_count(text):
 
 
 def excessive_letters(text, letter_occurances):
-    return {l: freq - letter_occurances for l, freq in Counter(text).items()
-        if freq > letter_occurances}
+    letters = {'A': 0, 'C': 0, 'G': 0, 'T': 0}
+    letters.update({l: freq - letter_occurances for l, freq in Counter(text).items()
+        if freq > letter_occurances})
+    return letters
 
 
 def excessive_genes(genes):
     return excessive_letters(genes, desired_letter_count(genes))
 
 
-def starting_search_window_size(excessive_genes):
-    return sum(excessive_genes.values())
-
-
-def stabilizes_gene(char_frequencies, replace_me):
-    if len(char_frequencies) < len(replace_me):
-        return False
-
-    for symbol, freq in replace_me.items():
-        if symbol not in char_frequencies or freq > char_frequencies[symbol]:
+def gene_stabilized(replace_me):
+    for freq in replace_me.values():
+        if freq > 0:
             return False
 
     return True
 
 
-def expand_substring(substr, text, position, replace_me):
-    while position + 1< len(text) and not stabilizes_gene(Counter(substr), replace_me):
-        position += 1
-        substr += text[position]
-
-    return (substr, position)
+def there_is_more_symbols_in(text, position):
+    return position < len(text)
 
 
-def reduce_substring(substr, replace_me):
-    last_removed_letter = ''
+def expand_substring(text, right_position, exessive_symbols):
+    while there_is_more_symbols_in(text, right_position) and \
+            not gene_stabilized(exessive_symbols):
+        symbol = text[right_position]
+        exessive_symbols[symbol] -= 1
+        right_position += 1
 
-    while len(substr) > 0 and stabilizes_gene(Counter(substr), replace_me):
-        last_removed_letter = substr[0]
-        substr = substr[1:]
-
-    return substr, last_removed_letter
+    return right_position, exessive_symbols
 
 
-def min_substring(text):
-    min_substring = text
+def reduce_substring(text, left_position, exessive_symbols):
+    while gene_stabilized(exessive_symbols):
+        symbol = text[left_position]
+        exessive_symbols[symbol] += 1
+        left_position += 1
+
+    return left_position, exessive_symbols
+
+
+def min_stabilizer(text):
+    """Finds minimum substring that stabilizes gene.
+
+    Args:
+        text (str): string made of A, G, C, T symbols representing gene.
+
+    Returns:
+        int: minimum substring to be replaced so that gene would be stable.
+    """
     replace_me = excessive_genes(text)
+    if sum(replace_me.values()) == 0:
+        return 0
 
-    if len(replace_me) == 0:
-        return ''
+    pos_r = 0
+    pos_l = 0
+    min_length = len(text)
 
-    pos = 0
-    substr = text[0]
-    while pos + 1 < len(text):
-        substr, pos = expand_substring(substr, text, pos, replace_me)
-        substr, last_removed = reduce_substring(substr, replace_me)
+    while there_is_more_symbols_in(text, pos_r):
+        pos_r, replace_me = expand_substring(text, pos_r, replace_me)
+        pos_l, replace_me = reduce_substring(text, pos_l, replace_me)
 
-        if len(substr) + 1 < len(min_substring):
-            min_substring = last_removed + substr
+        if pos_r - pos_l + 1 < min_length:
+            min_length = pos_r - pos_l + 1
 
-    return min_substring
+    return min_length
 
 
 def main():
-    n = int(input())
+    int(input()) # Reads the gene length, but in python we don't need that.
     s = input()
 
-    print(len(min_substring(s)))
+    print(min_stabilizer(s))
 
 
 if __name__ == '__main__':
